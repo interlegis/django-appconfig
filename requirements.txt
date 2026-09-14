@@ -1,0 +1,8 @@
+myst-parser==5.1.0
+Sphinx==9.1.0
+sphinx_rtd_theme==3.1.0
+rstfmt==0.0.14
+doc8==2.0.0
+rstcheck==6.3.0
+rstcheck-core==1.3.2
+sphinx-lint==1.0.2

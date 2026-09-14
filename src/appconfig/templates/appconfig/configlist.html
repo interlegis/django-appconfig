@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+<div class="card appconfigmenu">
+  <div class="card-body">
+    {% for app in applist %}
+    <a href="{% url "appconfig:appconfigform" app.name %}" class="btn btn-primary">
+        {% blocktrans with verbose_name=app.verbose_name%}
+        {{ verbose_name }} settings
+        {% endblocktrans %}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

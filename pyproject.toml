@@ -1,0 +1,45 @@
+[build-system]
+requires = ["hatchling >= 1.26", "hatch-vcs"]
+build-backend = "hatchling.build"
+
+[project]
+name = "django-appconfig"
+dynamic = ["version"]
+authors = [
+    {name="Sesóstris Vieira", email="sevieira@senado.leg.br"},
+]
+maintainers = [
+    {name="Sesóstris Vieira", email="sevieira@senado.leg.br"},
+]
+description = "A generic interface to define per-app configuration parameters"
+readme = "README.md"
+keywords = ["django", "config", "admin"]
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: User Interfaces",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Framework :: Django :: 5.0",
+]
+dependencies = [
+    "Django>=4",
+]
+
+[project.urls]
+Homepage = "https://github.com/interlegis/django-appconfig"
+Documentation = "https://github.com/interlegis/django-appconfig/wiki"
+Repository = "https://github.com/interlegis/django-appconfig"
+Issues = "https://github.com/interlegis/django-appconfig/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/appconfig"]
+
+[tool.hatch.version]
+source = "vcs"
+
+[tool.hatch.build.hooks.vcs]
+version-file = "_version.py"
