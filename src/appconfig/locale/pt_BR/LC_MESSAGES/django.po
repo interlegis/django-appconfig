@@ -1,0 +1,89 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-17 01:05+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+#: appconfig.py:52
+#, python-brace-format
+msgid "Has no app with name {appname}"
+msgstr "Não existe nenhum app com o nome {appname}"
+
+#: appconfig.py:59
+#, python-brace-format
+msgid "App {app_name} does not have appconfig module"
+msgstr "O app {app_name} não tem o módulo appconfig"
+
+#: appconfig.py:66
+#, python-brace-format
+msgid ""
+"App {app_name} does not have AppConfigForm class in its appconfig module"
+msgstr "O app {app_name} não tem a classe AppConfigForm no seu módulo appconfig"
+
+#: appconfig.py:74
+#, python-brace-format
+msgid "The AppConfigForm of {app_name} is not a django.form.Form subclass"
+msgstr "A classe AppConfigForm de {app_name} não é uma subclasse de django.form.Form subclass"
+
+#: models.py:8
+msgid "app name"
+msgstr "nome do app"
+
+#: models.py:9
+msgid "field name"
+msgstr "nome do campo"
+
+#: models.py:11
+msgid "field value"
+msgstr "valor do campo"
+
+#: models.py:16
+msgid "Config parameter"
+msgstr "Parâmetro de configuração"
+
+#: models.py:17
+msgid "Config parameters"
+msgstr "Parâmetros de configuração"
+
+#: templates/appconfig/configlist.html:9
+#, python-format
+msgid ""
+"\n"
+"        %(verbose_name)s settings\n"
+"        "
+msgstr ""
+"\n"
+"        Configurações de %(verbose_name)s\n"
+"        "
+
+#: views.py:27
+msgid "App configuration"
+msgstr "Configurações do app"
+
+#: views.py:39
+#, python-brace-format
+msgid "Config form not found to app {appname}"
+msgstr "Formulário de configuração não encontrado para o app {appname}"
+
+#: views.py:78
+#, python-brace-format
+msgid "{appname} settings saved successfully"
+msgstr "Configurações de {appname} salvos com sucesso"
+
+#: views.py:91
+#, python-brace-format
+msgid "{appname} settings"
+msgstr "Configurações de {appname}"
