@@ -1,144 +1,213 @@
+import base64
 import importlib
+import pickle
+from dataclasses import dataclass
+from datetime import datetime
 from pathlib import Path
 from django import forms
 from django.apps import apps
 from django.conf import settings
 from django.core.files import File
 from django.core.files.storage import default_storage
+from django.core.files.uploadedfile import UploadedFile
 from django.utils.translation import gettext_lazy as _
 
 
+class AppConfigFormDoesNotExists(Exception):
+    pass
+
+
+@dataclass
+class AppconfigFile:
+    name: str
+
+
 class App:
-    """Represents an application configuration
+    """Represents an application configuration"""
 
-    Args:
-        app_name (str): the app name
-        parameters (dict): A dictionary with all appconfig parameters
-    """
+    _appname = ""
+    _djangoappconfig = None
+    _appconfigformclass = None
+    _appconfigform = None
 
-    app_name = ""
+    def __init__(self, appname):
+        self._appname = appname
+        self.__dict__.update(self.get_fields())
 
-    def __init__(self, app_name, parameters):
-        self.app_name = app_name
-        self.__dict__.update(parameters)
+    def __getattr__(self, name):
+        from .models import Config
+
+        # Try get value from database
+        try:
+            record = Config.objects.get(app_name=self._appname, field_name=name)
+            value_b64 = record.field_value
+        except Config.DoesNotExist:
+            # Try get default value from form
+            form = self.configform_class()
+            if name in form.fields:
+                value_b64 = base64.b64encode(
+                    pickle.dumps(form.fields[name].initial)
+                )
+            else:
+                value_b64 = base64.b64encode(pickle.dumps(None))
+        value = pickle.loads(base64.b64decode(value_b64))
+        setattr(self, name, value)
+        return value
+
+    def __get_configform_class__(self):
+        app = self.appconfig
+        # Buscar a classe AppconfigForm no módulo "appconfig" na app
+        try:
+            appconfig_module = importlib.import_module(
+                ".appconfig", package=app.name
+            )
+        except ModuleNotFoundError:
+            raise AppConfigFormDoesNotExists(
+                _("App {app_name} does not have appconfig module").format(
+                    app_name=self._appname
+                )
+            )
+        if not hasattr(appconfig_module, "AppConfigForm"):
+            raise AppConfigFormDoesNotExists(
+                _(
+                    "App {app_name} does not have AppConfigForm class in its "
+                    "appconfig module"
+                ).format(app_name=self._appname)
+            )
+        AppConfigForm = getattr(appconfig_module, "AppConfigForm")
+        if not issubclass(AppConfigForm, forms.Form):
+            raise AppConfigFormDoesNotExists(
+                _(
+                    "The AppConfigForm of {app_name} is not a "
+                    "django.form.Form subclass"
+                ).format(app_name=self._appname)
+            )
+        return AppConfigForm
+
+    @property
+    def appname(self):
+        return self._appname
+
+    @property
+    def appconfig(self):
+        if not self._djangoappconfig:
+            self._djangoappconfig = apps.get_app_config(self._appname)
+        return self._djangoappconfig
+
+    @property
+    def configform_class(self):
+        if not self._appconfigformclass:
+            self._appconfigformclass = self.__get_configform_class__()
+        return self._appconfigformclass
+
+    def get_fields(self):
+        from .models import Config
+
+        fields = dict()
+
+        # Get form initial values
+        form = self.configform_class()
+        for fieldname, field in form.fields.items():
+            fields[fieldname] = field.initial
+            if isinstance(field, forms.FileField) and field.initial is not None:
+                # default_storage.open(file_name)
+                fields[fieldname] = File(
+                    field.initial.name, open(field.initial.name, "rb")
+                )
+                fields[fieldname].url = field.initial.url
+
+        # Get database data (override initial if necessary)
+        for record in Config.objects.filter(app_name=self._appname):
+            value = pickle.loads(base64.b64decode(record.field_value))
+            if isinstance(value, AppconfigFile):
+                file = default_storage.open(value.name)
+                file.name = value.name
+                file.url = default_storage.url(value.name)
+                value = file
+            fields[record.field_name] = value
+        # Update with object values
+        for fieldname, fieldvalue in self.__dict__.items():
+            if not fieldname.startswith("_"):
+                fields[fieldname] = fieldvalue
+        return fields
+
+    def update_fields(self, field_data):
+        from . import APPCONFIG_UPLOAD_PATH_DEFAULT
+
+        for fieldname, fieldvalue in field_data.items():
+            if isinstance(fieldvalue, UploadedFile):
+                filename = (
+                    Path(
+                        getattr(
+                            settings,
+                            "APPCONFIG_UPLOAD_PATH",
+                            APPCONFIG_UPLOAD_PATH_DEFAULT,
+                        ).format(
+                            appname=self.appname,
+                            fieldname=fieldname,
+                            datetime=datetime.now(),
+                        )
+                    )
+                    / fieldvalue.name
+                )
+                filename = default_storage.save(filename, fieldvalue)
+                value = default_storage.open(filename)
+                value.name = filename
+                value.url = default_storage.url(filename)
+            else:
+                value = fieldvalue
+            setattr(self, fieldname, value)
+
+    def remove_field(self, fieldname):
+        if not hasattr(self, fieldname):
+            raise AttributeError(f"Field {fieldname} does not exists")
+        value = getattr(self, fieldname)
+        from .models import Config
+
+        Config.objects.filter(
+            app_name=self._appname, field_name=fieldname
+        ).delete()
+        delattr(self, fieldname)
+        return value
+
+    def save(self):
+        from .models import Config
+
+        for key, value in self.__dict__.items():
+            if not key.startswith("_"):
+                if isinstance(value, File):
+                    value = AppconfigFile(value.name)
+                value_b64 = base64.b64encode(pickle.dumps(value))
+                Config.objects.update_or_create(
+                    app_name=self._appname,
+                    field_name=key,
+                    defaults={"field_value": value_b64},
+                )
 
 
 class AppConfig:
     """A class what retrieve all app configs"""
 
-    class AppConfigFormDoesNotExists(Exception):
-        pass
-
-    def get_configform_class(self, app):
-        """Get the AppConfigForm class from app
-
-        Args:
-            app (AppconfigConfig | str): An appconfig.apps.AppconfigConfig
-                                         object or an app name
-
-        Raises:
-            self.AppConfigFormDoesNotExists: If the app does not have
-                                             AppConfigForm class
-
-        Returns:
-            AppConfigForm class
-        """
-        if isinstance(app, str):
-            # carregar o app
-            try:
-                app = apps.get_app_config(app)
-            except LookupError:
-                raise self.AppConfigFormDoesNotExists(
-                    _("Has no app with name {appname}").format(appname=app)
-                )
-        # Buscar a classe AppconfigForm no módulo "appconfig" na app
-        try:
-            app_config = importlib.import_module(".appconfig", package=app.name)
-        except ModuleNotFoundError:
-            raise self.AppConfigFormDoesNotExists(
-                _("App {app_name} does not have appconfig module").format(
-                    app_name=app.name
-                )
-            )
-        if not hasattr(app_config, "AppConfigForm"):
-            raise self.AppConfigFormDoesNotExists(
-                _(
-                    "App {app_name} does not have AppConfigForm class in its "
-                    "appconfig module"
-                ).format(app_name=app.name)
-            )
-        AppConfigForm = getattr(app_config, "AppConfigForm")
-        if not issubclass(AppConfigForm, forms.Form):
-            raise self.AppConfigFormDoesNotExists(
-                _(
-                    "The AppConfigForm of {app_name} is not a "
-                    "django.form.Form subclass"
-                ).format(app_name=app.name)
-            )
-
-        return AppConfigForm
-
     def __getattr__(self, attrname):
-        from .models import Config
-
-        # Get AppConfigForm class in attrname app
         try:
-            AppConfigForm = self.get_configform_class(attrname)
-        except self.AppConfigFormDoesNotExists as e:
-            raise AttributeError(str(e))
+            app = App(attrname)
+        except:
+            raise AttributeError(f"'AppConfig' has no attribute '{attrname}' ")
+        self.__dict__[attrname] = app
+        return app
 
-        # Creates a dict with all form fields and loads its values from
-        # database, or from field 'initial' property if no database
-        # value is found
-
-        data_dict = dict()
-
-        for field_name in AppConfigForm.base_fields:
-            dbrec = Config.objects.filter(
-                app_name=attrname, field_name=field_name
-            ).first()
-            if dbrec:
-                if isinstance(
-                    AppConfigForm.base_fields[field_name], forms.FileField
-                ):
-                    file_name = dbrec.field_value
-                    file = default_storage.open(file_name)
-                    file.name = file_name
-                    file.url = default_storage.url(file_name)
-                    data_dict[field_name] = file
-                else:
-                    data_dict[field_name] = dbrec.field_value
-            else:
-                data_dict[field_name] = AppConfigForm.base_fields[
-                    field_name
-                ].initial
-
-        # Instantiates the ConfigForm, put the data_dict as data in the form
-        # instance to validade and converts into python native values.
-
-        form = AppConfigForm(data=data_dict)
-        if form.is_valid():
-            data_dict = form.cleaned_data
-
-        # Transforma o dicionário obtido em um objeto App
-
-        app_obj = App(attrname, data_dict)
-
-        return app_obj
-
-    def get_app_configs(self):
-        """Returns a list of AppconfigConfig of apps that have a valid
-           appconfig module
+    def get_apps(self):
+        """List of App objects for all installed apps that have a
+        valid appconfig module
 
         Returns:
             list: A list of django.apps.AppconfigConfig
         """
         app_list = []
         for app in apps.get_app_configs():
-            # Get AppConfigForm class in attrname app
             try:
-                AppConfigForm = self.get_configform_class(app)
-            except self.AppConfigFormDoesNotExists as e:
+                app = App(app.name)
+            except:
                 continue
             app_list.append(app)
         return app_list

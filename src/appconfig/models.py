@@ -7,8 +7,8 @@ from django.utils.translation import gettext_lazy as _
 class Config(models.Model):
     app_name = models.CharField(_("app name"), max_length=100)
     field_name = models.CharField(_("field name"), max_length=100)
-    field_value = models.TextField(
-        _("field value"),
+    field_value = models.BinaryField(
+        _("binary field value"),
     )
 
     class Meta:

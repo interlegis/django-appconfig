@@ -5,8 +5,8 @@
 <div class="card appconfigmenu">
   <div class="card-body">
     {% for app in applist %}
-    <a href="{% url "appconfig:appconfigform" app.label %}" class="btn btn-primary">
-        {% blocktrans with verbose_name=app.verbose_name%}
+    <a href="{% url "appconfig:appconfigform" app.appconfig.label %}" class="btn btn-primary">
+        {% blocktrans with verbose_name=app.appconfig.verbose_name%}
         {{ verbose_name }} settings
         {% endblocktrans %}
     </a>
