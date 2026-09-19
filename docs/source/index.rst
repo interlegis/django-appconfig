@@ -16,6 +16,8 @@ Normally, this type of data is usually kept in the `settings.py` project
 file. But if this data changes with a moderate or hight frequency, we need
 redeploy the project whenever a change is made.
 
+There is also data that needs to be persisted for use at different stages of a process lifecycle, such as the date of the last execution or a hash of data fetched from the web.
+
 An alternative is to write a Model to persist these data in the database, but
 this type of model has no one relationship with other models in project, they
 appear to be "floating" in a class diagram.
@@ -31,4 +33,5 @@ way to access these data in your code.
    installation
    how_to_use
    templates
+   api
 

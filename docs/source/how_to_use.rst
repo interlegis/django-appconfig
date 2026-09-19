@@ -52,3 +52,20 @@ To retrieve user settings for your apps, use the `config` object provided by the
 
 
 Replace <appname> and <fieldname> with the name of the app and the config field you wish to access.
+
+You can also manipulate data that is not visible in the interface but is accessible to the developer. To do this, simply access it directly via the `config` object—e.g.,
+
+.. code-block:: python
+
+    from appconfig import config
+    from hashlib import md5
+    ...
+    # To set and persist a new field in an app
+    config.myapp.my_new_field = md5(received_data).hexdigest()
+    config.myapp.save()
+    ...
+    # To retrieve a existing data
+    if config.myapp.my_new_field is None or config.myapp.my_new_field != md5(other_received_data).hexdigest():
+        do_something()
+
+Note that if the field has never been defined, simply accessing `config.<appname>.<fieldname>` will create the field and set its initial value to `None`. The data will only be persisted when the `.save()` method is called.
