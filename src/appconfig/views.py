@@ -60,11 +60,19 @@ def configform(request, appname):
     else:
         form = app.configform_class(initial=app.get_fields())
 
+    title = (
+        form.form_title
+        if hasattr(form, "form_title")
+        else _("{appname} settings").format(appname=appname)
+    )
+    subtitle = form.form_subtitle if hasattr(form, "form_subtitle") else None
+
     return render(
         request,
         "appconfig/configform.html",
         context={
-            "title": _("{appname} settings").format(appname=appname),
+            "title": title,
+            "subtitle": subtitle,
             "form": form,
             "app": app,
         },

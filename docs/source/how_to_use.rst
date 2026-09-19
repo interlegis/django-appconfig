@@ -15,6 +15,8 @@ e.g:
     from django import forms
 
     class AppConfigForm(forms.Form):
+        form_title = "Myapp configuration page"
+        form_subtitle = "Settings to scrapping daily cron routine"
         email = forms.EmailField(
             label="E-mail",
             help_text="E-mail address to send scrap resume report",
@@ -28,7 +30,11 @@ e.g:
         )
 
 
-Note: The filename `appconfig.py` and the class name `AppconfigForm` are mandatory and must be typed exactly as shown.
+.. attention::
+    The filename `appconfig.py` and the class name `AppconfigForm` are mandatory and must be typed exactly as shown.
+
+.. tip::
+    You can set `form_title` and `form_subtitle` properties on the form to customize the form page title and subtitle. If they are not set, the title defaults to the translated string `_("{appname} settings")`.
 
 Setting values in admin interface
 ---------------------------------
