@@ -206,7 +206,7 @@ class AppConfig:
         app_list = []
         for app in apps.get_app_configs():
             try:
-                app = App(app.name)
+                app = App(app.label)
             except:
                 continue
             app_list.append(app)
